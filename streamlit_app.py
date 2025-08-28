@@ -133,7 +133,7 @@ fig7.update_layout(title="Final Battery SOC", xaxis_title="Day", yaxis_title="SO
 
 # --- Chart 8: Battery Cycles ---
 fig8 = go.Figure()
-fig8.add_trace(go.Bar(x=df['Day'], y=df['Battery_Cycles_Daily'], marker_color='gray', marker_line_color='black')))
+fig8.add_trace(go.Bar(x=df['Day'], y=df['Battery_Cycles_Daily'], marker_color='gray', marker_line_color='black'))
 fig8.update_layout(title="Daily Battery Cycles", xaxis_title="Day", yaxis_title="Cycles", height=300)
 
 # Display charts in app
@@ -237,4 +237,5 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
