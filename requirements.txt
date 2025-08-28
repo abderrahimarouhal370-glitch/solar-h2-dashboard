@@ -1,4 +1,5 @@
 streamlit
 pandas
 plotly
-weasyprint
+matplotlib
+fpdf2
