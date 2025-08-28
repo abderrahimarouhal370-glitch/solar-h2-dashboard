@@ -4,8 +4,9 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import os
 from datetime import datetime
+from fpdf2 import FPDF
+from matplotlib import pyplot as plt
 import tempfile
-from weasyprint import HTML
 
 # ====================
 # Page Title
@@ -91,71 +92,60 @@ col3.metric("Zero H₂ Days", f"{zero_h2_days}")
 col4.metric("Days at 20% SOC", f"{days_at_min_soc}")
 
 # ====================
-# All Charts (We'll reuse these for PDF)
+# Generate Charts for Display and PDF
 # ====================
+def create_matplotlib_chart(x, y, title, ylabel, color="blue", kind="bar"):
+    fig, ax = plt.subplots(figsize=(8, 4))
+    if kind == "bar":
+        ax.bar(x, y, color=color)
+    elif kind == "line":
+        ax.plot(x, y, color=color, marker='o')
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("Day of Month")
+    ax.grid(True, alpha=0.3)
+    return fig
+
 # --- Chart 1: PV Production ---
-fig1 = go.Figure()
-fig1.add_trace(go.Bar(x=df['Day'], y=df['PV_Total_MWh'], marker_color='rgb(70, 130, 180)', marker_line_color='darkblue', marker_line_width=2))
-fig1.update_layout(title="Daily PV Production", xaxis_title="Day", yaxis_title="PV (MWh)", height=300)
+fig1 = create_matplotlib_chart(df['Day'], df['PV_Total_MWh'], "Daily PV Production", "PV Energy (MWh)", "skyblue")
 
 # --- Chart 2: H2 Production ---
-fig2 = go.Figure()
-fig2.add_trace(go.Bar(x=df['Day'], y=df['H2_Produced_kg'], marker_color='rgb(46, 139, 87)', marker_line_color='darkgreen', marker_line_width=2))
-fig2.update_layout(title="Daily H₂ Production", xaxis_title="Day", yaxis_title="H₂ (kg)", height=300)
+fig2 = create_matplotlib_chart(df['Day'], df['H2_Produced_kg'], "Daily H₂ Production", "H₂ Produced (kg)", "green")
 
 # --- Chart 3: Batt → H2 ---
-fig3 = go.Figure()
-fig3.add_trace(go.Bar(x=df['Day'], y=df['Batt_to_H2_kWh'], marker_color='#FFD580', marker_line_color='#CC8E35', marker_line_width=2))
-fig3.update_layout(title="Battery → Electrolyzer", xaxis_title="Day", yaxis_title="Energy (kWh)", height=300)
+fig3 = create_matplotlib_chart(df['Day'], df['Batt_to_H2_kWh'], "Battery → Electrolyzer", "Energy (kWh)", "orange")
 
 # --- Chart 4: PV → H2 ---
-fig4 = go.Figure()
-fig4.add_trace(go.Bar(x=df['Day'], y=df['PV_to_H2_kWh'], marker_color='#FFF9C4', marker_line_color='#F4B400', marker_line_width=2))
-fig4.update_layout(title="PV → Electrolyzer", xaxis_title="Day", yaxis_title="Energy (kWh)", height=300)
+fig4 = create_matplotlib_chart(df['Day'], df['PV_to_H2_kWh'], "PV → Electrolyzer", "Energy (kWh)", "gold")
 
 # --- Chart 5: H2 Duration ---
-fig5 = go.Figure()
-fig5.add_trace(go.Bar(x=df['Day'], y=df['H2_Duration'], marker_color='rgb(255, 140, 0)', marker_line_color='darkred', marker_line_width=2))
-fig5.update_layout(title="H₂ On Duration (Hours)", xaxis_title="Day", yaxis_title="Hours", height=300)
+fig5 = create_matplotlib_chart(df['Day'], df['H2_Duration'], "H₂ On Duration (Hours)", "Hours Running", "darkorange")
 
-# --- Chart 6: Start/Stop Timeline ---
-fig6 = go.Figure()
-fig6.add_trace(go.Bar(x=df['Day'], y=df['H2_Start_Hour'], marker_color='white', showlegend=False, hoverinfo='skip'))
-fig6.add_trace(go.Bar(x=df['Day'], y=df['H2_Duration'], base=df['H2_Start_Hour'], marker_color='rgb(255, 140, 0)', marker_line_color='darkred', width=0.8))
-fig6.update_layout(title="Daily H₂ Start & Stop Times", xaxis_title="Day", yaxis_title="Time (h)", barmode='relative', height=300)
+# --- Chart 6: Final SOC ---
+fig6 = create_matplotlib_chart(df['Day'], df['Final_SOC_pct'], "Final Battery SOC", "SOC (%)", "purple", kind="line")
 
-# --- Chart 7: Final SOC ---
-fig7 = go.Figure()
-fig7.add_trace(go.Scatter(x=df['Day'], y=df['Final_SOC_pct'], mode='lines+markers', line=dict(color='purple'), marker=dict(size=6)))
-fig7.add_hline(y=20, line_dash="dash", line_color="red", annotation_text="Min (20%)")
-fig7.add_hline(y=95, line_dash="dash", line_color="green", annotation_text="Max (95%)")
-fig7.update_layout(title="Final Battery SOC", xaxis_title="Day", yaxis_title="SOC (%)", height=300)
+# --- Chart 7: Battery Cycles ---
+fig7 = create_matplotlib_chart(df['Day'], df['Battery_Cycles_Daily'], "Daily Battery Cycles", "Cycles", "gray")
 
-# --- Chart 8: Battery Cycles ---
-fig8 = go.Figure()
-fig8.add_trace(go.Bar(x=df['Day'], y=df['Battery_Cycles_Daily'], marker_color='gray', marker_line_color='black'))
-fig8.update_layout(title="Daily Battery Cycles", xaxis_title="Day", yaxis_title="Cycles", height=300)
-
-# Display charts in app
+# Display in app
 st.subheader("🌤️ Daily Energy Generation & Hydrogen Production")
 c1, c2 = st.columns(2)
-c1.plotly_chart(fig1, use_container_width=True)
-c2.plotly_chart(fig2, use_container_width=True)
+c1.pyplot(fig1)
+c2.pyplot(fig2)
 
 st.subheader("⚡ Energy Contribution to Electrolyzer")
 c3, c4 = st.columns(2)
-c3.plotly_chart(fig3, use_container_width=True)
-c4.plotly_chart(fig4, use_container_width=True)
+c3.pyplot(fig3)
+c4.pyplot(fig4)
 
 st.subheader("⏱️ Electrolyzer Operation Schedule")
 c5, c6 = st.columns(2)
-c5.plotly_chart(fig5, use_container_width=True)
-c6.plotly_chart(fig6, use_container_width=True)
+c5.pyplot(fig5)
+c6.pyplot(fig6)
 
 st.subheader("🔋 Battery Health & Usage")
-c7, c8 = st.columns(2)
-c7.plotly_chart(fig7, use_container_width=True)
-c8.plotly_chart(fig8, use_container_width=True)
+c7 = st.columns(1)[0]
+c7.pyplot(fig7)
 
 # Raw Data
 st.subheader("📊 Raw Data")
@@ -171,53 +161,81 @@ st.dataframe(df.style.format({
 # PDF Export Button
 # ====================
 if st.button("🖨️ Export Report as PDF"):
-    with st.spinner("Generating PDF..."):
+    with st.spinner("Generating PDF report..."):
 
-        # Save plots as images
         with tempfile.TemporaryDirectory() as tmpdir:
-            img_paths = {}
-            for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8]):
-                path = f"{tmpdir}/fig{i+1}.png"
-                pio.write_image(fig, path, width=800, height=400)
-                img_paths[f"fig{i+1}"] = path
+            image_paths = []
 
-            # Create HTML content
-            html_content = f"""
-            <h1>Solar-to-Hydrogen Report – {selected_month} 2023</h1>
-            <p><strong>Generated on:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-            <h2>System Configuration</h2>
-            <ul>
-                <li><strong>PV Plant:</strong> 3.9 MW</li>
-                <li><strong>Battery:</strong> 7.3 MWh</li>
-                <li><strong>Electrolyzer:</strong> 1 MW</li>
-            </ul>
-            <h2>Summary Metrics</h2>
-            <p>Total H₂ Produced: {total_h2:.0f} kg</p>
-            <p>Avg Daily H₂: {avg_h2:.1f} kg</p>
-            <p>Zero H₂ Days: {zero_h2_days}</p>
-            <p>Days at 20% SOC: {days_at_min_soc}</p>
-            <h2>Charts</h2>
-            <img src="{img_paths['fig1']}" width="700"><br><br>
-            <img src="{img_paths['fig2']}" width="700"><br><br>
-            <img src="{img_paths['fig3']}" width="700"><br><br>
-            <img src="{img_paths['fig4']}" width="700"><br><br>
-            <img src="{img_paths['fig5']}" width="700"><br><br>
-            <img src="{img_paths['fig6']}" width="700"><br><br>
-            <img src="{img_paths['fig7']}" width="700"><br><br>
-            <img src="{img_paths['fig8']}" width="700"><br><br>
-            <h2>Raw Data</h2>
-            {df.to_html(index=False)}
-            <footer><br><br><em>Report generated with Streamlit + Python</em></footer>
-            """
+            # Save all figures as PNG
+            for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7]):
+                path = f"{tmpdir}/chart_{i+1}.png"
+                fig.savefig(path, bbox_inches='tight', dpi=150)
+                plt.close(fig)
+                image_paths.append(path)
 
-            # Generate PDF
-            html = HTML(string=html_content)
-            pdf = html.write_pdf()
+            # Create PDF
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(0, 10, f"Solar-to-Hydrogen Report – {selected_month} 2023", ln=True, align="C")
 
-            # Offer download
+            pdf.set_font("Arial", "", 10)
+            pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
+            pdf.ln(5)
+
+            # System Info
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "System Configuration", ln=True)
+            pdf.set_font("Arial", "", 10)
+            pdf.cell(0, 6, "• PV Plant: 3.9 MW", ln=True)
+            pdf.cell(0, 6, "• Battery: 7.3 MWh", ln=True)
+            pdf.cell(0, 6, "• Electrolyzer: 1 MW", ln=True)
+            pdf.ln(5)
+
+            # Summary Metrics
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "Summary Metrics", ln=True)
+            pdf.set_font("Arial", "", 10)
+            pdf.cell(0, 6, f"• Total H₂ Produced: {total_h2:.0f} kg", ln=True)
+            pdf.cell(0, 6, f"• Avg Daily H₂: {avg_h2:.1f} kg", ln=True)
+            pdf.cell(0, 6, f"• Zero H₂ Days: {zero_h2_days}", ln=True)
+            pdf.cell(0, 6, f"• Days at 20% SOC: {days_at_min_soc}", ln=True)
+            pdf.ln(10)
+
+            # Charts
+            for i, img_path in enumerate(image_paths):
+                pdf.image(img_path, x=10, w=190)
+                pdf.ln(5)
+
+            # Raw Data Table
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "Raw Data", ln=True)
+            pdf.set_font("Arial", "B", 6)
+            for col in df.columns:
+                pdf.cell(14, 6, str(col), border=1)
+            pdf.ln(6)
+            pdf.set_font("Arial", "", 6)
+            for _, row in df.iterrows():
+                for col in df.columns:
+                    val = row[col]
+                    if pd.isna(val):
+                        val = ""
+                    else:
+                        val = str(round(val, 1)) if isinstance(val, (float, int)) else str(val)
+                    pdf.cell(14, 6, val[:10], border=1)  # Truncate long values
+                pdf.ln(6)
+
+            pdf.ln(10)
+            pdf.set_font("Arial", "I", 8)
+            pdf.cell(0, 10, "Report generated with Streamlit + fpdf2", ln=True)
+
+            # Output PDF
+            pdf_data = pdf.output(dest="S").encode("latin1")
+
             st.download_button(
                 label="✅ Click to Download PDF Report",
-                data=pdf,
+                data=pdf_data,
                 file_name=f"solar_h2_{selected_month.lower()}_2023_report.pdf",
                 mime="application/pdf"
             )
@@ -237,5 +255,6 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
