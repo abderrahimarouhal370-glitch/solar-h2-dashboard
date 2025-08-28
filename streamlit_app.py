@@ -126,7 +126,7 @@ fig6.update_layout(title="Daily H₂ Start & Stop Times", xaxis_title="Day", yax
 
 # --- Chart 7: Final SOC ---
 fig7 = go.Figure()
-fig7.add_trace(go.Scatter(x=df['Day'], y=df['Final_SOC_pct'], mode='lines+markers', line=dict(color='purple'), marker=dict(size=6))))
+fig7.add_trace(go.Scatter(x=df['Day'], y=df['Final_SOC_pct'], mode='lines+markers', line=dict(color='purple'), marker=dict(size=6)))
 fig7.add_hline(y=20, line_dash="dash", line_color="red", annotation_text="Min (20%)")
 fig7.add_hline(y=95, line_dash="dash", line_color="green", annotation_text="Max (95%)")
 fig7.update_layout(title="Final Battery SOC", xaxis_title="Day", yaxis_title="SOC (%)", height=300)
@@ -237,3 +237,4 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
