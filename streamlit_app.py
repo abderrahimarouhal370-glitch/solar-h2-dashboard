@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
-from datetime import datetime
 
 # ====================
 # Page Config
@@ -62,13 +61,13 @@ with col_top2:
 st.markdown("---")
 
 # ====================
-# Auto-Load CSV Files from 'data' Folder
+# Auto-Load CSV Files from 'solar_dashboard' Folder
 # ====================
-DATA_FOLDER = "data"  # Change this if your files are elsewhere
+DATA_FOLDER = "solar_dashboard"  # Your folder name
 all_months_data = {}
 
 if not os.path.exists(DATA_FOLDER):
-    st.error(f"❌ Data folder '{DATA_FOLDER}' not found. Please create it and add CSV files.")
+    st.error(f"❌ Data folder '{DATA_FOLDER}' not found. Please make sure it exists and contains CSV files.")
     st.stop()
 
 csv_files = [f for f in os.listdir(DATA_FOLDER) if f.lower().endswith(".csv")]
@@ -124,8 +123,8 @@ for file in csv_files:
 # ====================
 # Handle No Data
 # ====================
-if not all_months_
-    st.info("📁 No valid data loaded. Please check your CSV files in the 'data' folder.")
+if not all_months_data:  # ✅ Fixed: was 'if not all_months_'
+    st.info("📁 No valid data loaded. Please check your CSV files in the 'solar_dashboard' folder.")
     st.stop()
 
 # ====================
@@ -437,7 +436,7 @@ with col_left4:
     fig7.add_trace(go.Scatter(
         x=current_data['Day'],
         y=current_data['Final_SOC_pct'],
-        mode='lines+markers+text',  # ✅ Added 'text' to show labels
+        mode='lines+markers+text',  # ✅ Show values on points
         text=current_data['Final_SOC_pct'].round(0).astype(str) + "%",
         textposition="top center",
         textfont=dict(size=9),
