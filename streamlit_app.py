@@ -62,69 +62,70 @@ with col_top2:
 st.markdown("---")
 
 # ====================
-# Data Uploader
+# Auto-Load CSV Files from 'data' Folder
 # ====================
-uploaded_files = st.file_uploader(
-    "📤 Upload 2023 Monthly CSV Files",
-    type=["csv"],
-    accept_multiple_files=True,
-    help="Upload one or more monthly CSV files (e.g., solar_h2_january_2023_detailed.csv)"
-)
-
-# ====================
-# Process All Uploaded Files
-# ====================
+DATA_FOLDER = "data"  # Change this if your files are elsewhere
 all_months_data = {}
 
-if uploaded_files:
-    for file in uploaded_files:
-        try:
-            df = pd.read_csv(file)
-            df.columns = df.columns.str.strip()
+if not os.path.exists(DATA_FOLDER):
+    st.error(f"❌ Data folder '{DATA_FOLDER}' not found. Please create it and add CSV files.")
+    st.stop()
 
-            # Extract month from filename
-            filename = file.name.lower()
-            detected_month = None
-            for m in MONTHS:
-                if m.lower() in filename:
-                    detected_month = m
-                    break
-            if not detected_month:
-                st.warning(f"⚠️ Could not detect month from filename: {file.name}")
-                continue
+csv_files = [f for f in os.listdir(DATA_FOLDER) if f.lower().endswith(".csv")]
 
-            required_cols = [
-                'Day', 'PV_Total_MWh', 'PV_to_H2_kWh', 'Batt_to_H2_kWh',
-                'H2_Start_Hour', 'H2_Stop_Hour', 'H2_Produced_kg',
-                'Final_SOC_pct', 'Battery_Cycles_Daily'
-            ]
-            missing = [col for col in required_cols if col not in df.columns]
-            if missing:
-                st.warning(f"❌ Missing columns in {file.name}: {missing}")
-                continue
+if not csv_files:
+    st.warning(f"⚠️ No CSV files found in '{DATA_FOLDER}/' folder.")
+    st.stop()
 
-            # Clean and filter data
-            df = df[pd.to_numeric(df['Day'], errors='coerce').notna()]
-            df['Day'] = pd.to_numeric(df['Day'])
-            df = df[df['Day'] >= 1].sort_values('Day').reset_index(drop=True)
+for file in csv_files:
+    try:
+        file_path = os.path.join(DATA_FOLDER, file)
+        df = pd.read_csv(file_path)
+        df.columns = df.columns.str.strip()
 
-            # Compute derived columns
-            df['H2_Duration'] = (df['H2_Stop_Hour'] - df['H2_Start_Hour']).clip(lower=0)
-            zero_mask = (df['H2_Produced_kg'] == 0) | (df['H2_Produced_kg'].isna())
-            df.loc[zero_mask, ['H2_Duration', 'H2_Start_Hour', 'H2_Stop_Hour']] = 0
+        # Detect month from filename
+        filename = file.lower()
+        detected_month = None
+        for m in MONTHS:
+            if m.lower() in filename:
+                detected_month = m
+                break
+        if not detected_month:
+            st.warning(f"⚠️ Could not detect month from filename: {file}")
+            continue
 
-            df['H2_Energy_Total_kWh'] = df['PV_to_H2_kWh'] + df['Batt_to_H2_kWh']
+        required_cols = [
+            'Day', 'PV_Total_MWh', 'PV_to_H2_kWh', 'Batt_to_H2_kWh',
+            'H2_Start_Hour', 'H2_Stop_Hour', 'H2_Produced_kg',
+            'Final_SOC_pct', 'Battery_Cycles_Daily'
+        ]
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            st.warning(f"❌ Missing columns in {file}: {missing}")
+            continue
 
-            all_months_data[detected_month] = df.to_dict('records')
+        # Clean and filter data
+        df = df[pd.to_numeric(df['Day'], errors='coerce').notna()]
+        df['Day'] = pd.to_numeric(df['Day'])
+        df = df[df['Day'] >= 1].sort_values('Day').reset_index(drop=True)
 
-        except Exception as e:
-            st.error(f"❌ Error processing {file.name}: {str(e)}")
+        # Compute derived columns
+        df['H2_Duration'] = (df['H2_Stop_Hour'] - df['H2_Start_Hour']).clip(lower=0)
+        zero_mask = (df['H2_Produced_kg'] == 0) | (df['H2_Produced_kg'].isna())
+        df.loc[zero_mask, ['H2_Duration', 'H2_Start_Hour', 'H2_Stop_Hour']] = 0
+
+        df['H2_Energy_Total_kWh'] = df['PV_to_H2_kWh'] + df['Batt_to_H2_kWh']
+
+        all_months_data[detected_month] = df.to_dict('records')
+
+    except Exception as e:
+        st.error(f"❌ Error processing {file}: {str(e)}")
 
 # ====================
 # Handle No Data
 # ====================
-if not all_months_data:
-    st.info("📁 Please upload at least one valid CSV file to begin analysis.")
+if not all_months_
+    st.info("📁 No valid data loaded. Please check your CSV files in the 'data' folder.")
     st.stop()
 
 # ====================
@@ -219,7 +220,7 @@ with col_left1:
         marker_line_color='darkblue',
         marker_line_width=1.5,
         text=current_data['PV_Total_MWh'].round(1),
-        textposition='outside',  # ✅ Fixed: was 'top center'
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} MWh<extra></extra>'
     ))
     fig1.update_layout(
@@ -246,7 +247,7 @@ with col_right1:
         marker_line_color='darkgreen',
         marker_line_width=1.5,
         text=current_data['H2_Produced_kg'].round(1),
-        textposition='outside',  # ✅ Fixed
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} kg<extra></extra>'
     ))
     fig2.update_layout(
@@ -280,7 +281,7 @@ with col_left2:
         marker_line_color='#CC8E35',
         marker_line_width=1.5,
         text=current_data['Batt_to_H2_kWh'].round(1),
-        textposition='outside',  # ✅ Fixed
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} kWh<extra></extra>'
     ))
     fig3.update_layout(
@@ -307,7 +308,7 @@ with col_right2:
         marker_line_color='#F4B400',
         marker_line_width=1.5,
         text=current_data['PV_to_H2_kWh'].round(1),
-        textposition='outside',  # ✅ Fixed
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} kWh<extra></extra>'
     ))
     fig4.update_layout(
@@ -337,7 +338,7 @@ fig_energy.add_trace(go.Bar(
     marker_line_color='darkred',
     marker_line_width=1.5,
     text=current_data['H2_Energy_Total_kWh'].round(1),
-    textposition='outside',  # ✅ Fixed
+    textposition='outside',
     hovertemplate='Day %{x}: %{y:.1f} kWh<extra></extra>'
 ))
 fig_energy.update_layout(
@@ -369,7 +370,7 @@ with col_left3:
         marker_line_color='darkred',
         marker_line_width=1.5,
         text=current_data['H2_Duration'].round(1),
-        textposition='outside',  # ✅ Fixed
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} h<extra></extra>'
     ))
     fig5.update_layout(
@@ -430,13 +431,16 @@ st.subheader("🔋 Battery Health & Usage")
 
 col_left4, col_right4 = st.columns(2)
 
-# Left: Final SOC
+# Left: Final SOC (with value labels on each point)
 with col_left4:
     fig7 = go.Figure()
     fig7.add_trace(go.Scatter(
         x=current_data['Day'],
         y=current_data['Final_SOC_pct'],
-        mode='lines+markers',
+        mode='lines+markers+text',  # ✅ Added 'text' to show labels
+        text=current_data['Final_SOC_pct'].round(0).astype(str) + "%",
+        textposition="top center",
+        textfont=dict(size=9),
         marker=dict(color='purple', size=8, line=dict(color='darkred', width=2)),
         line=dict(color='purple', width=3),
         hovertemplate='Day %{x}: %{y:.1f}%<extra></extra>'
@@ -466,7 +470,7 @@ with col_right4:
         marker_line_color='black',
         marker_line_width=1.5,
         text=current_data['Battery_Cycles_Daily'].round(1),
-        textposition='outside',  # ✅ Fixed
+        textposition='outside',
         hovertemplate='Day %{x}: %{y:.1f} cycles<extra></extra>'
     ))
     fig8.update_layout(
@@ -488,7 +492,6 @@ st.markdown("### 📊 Raw Data")
 df_display = pd.DataFrame(all_months_data[selected_month])
 df_display['H2_Energy_Total_kWh'] = df_display['H2_Energy_Total_kWh'].round(1)
 
-# ✅ Safe: Use .round() without Styler
 st.dataframe(df_display.round(1), height=300)
 
 st.download_button(
@@ -503,6 +506,7 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
 
