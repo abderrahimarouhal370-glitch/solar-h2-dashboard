@@ -30,26 +30,24 @@ MONTHS = [
 ]
 
 # ====================
-# Header
+# Header & Month Selector (Only One!)
 # ====================
 st.title("🌞 Solar-to-Hydrogen MPC Dashboard – 2023")
 st.markdown("Analyze monthly performance of solar-powered hydrogen production with battery storage.")
 
-# ====================
-# Top Panel: System Info + Month Selector
-# ====================
-col_top1, col_top2 = st.columns([3, 1])
+# === Single Month Selector at Top ===
+col1, col2 = st.columns([3, 1])
 
-with col_top1:
-    st.markdown("### 📅 Select Month")
+with col1:
+    st.markdown("### 📅 Choose Month to View")
     selected_month = st.selectbox(
-        "Choose a month to analyze:",
+        "",
         options=MONTHS,
         index=0,
         label_visibility="collapsed"
     )
 
-with col_top2:
+with col2:
     st.markdown("### ⚙️ System")
     st.markdown(f"""
     - **PV Plant**: {SYSTEM_INFO['PV Plant']}  
@@ -63,7 +61,6 @@ st.markdown("---")
 # ====================
 # Auto-Load CSV Files from Root Folder
 # ====================
-# Get all CSV files in the current directory
 csv_files = [f for f in os.listdir(".") if f.lower().endswith(".csv")]
 
 if not csv_files:
@@ -499,9 +496,7 @@ st.download_button(
 # Footer
 # ====================
 st.markdown("---")
-st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
-
-
+st.markdown("🔋 *Dashboard by: Abderrahim AROUHAL | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
 
 
 
