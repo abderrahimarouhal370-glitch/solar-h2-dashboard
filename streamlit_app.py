@@ -38,14 +38,16 @@ st.markdown("Analyze monthly performance of solar-powered hydrogen production wi
 # === Single Month Selector at Top ===
 col1, col2 = st.columns([3, 1])
 
-with col1:
-    st.markdown("### 📅 Choose Month to View")
-    selected_month = st.selectbox(
-        "",
-        options=MONTHS,
-        index=0,
-        label_visibility="collapsed"
-    )
+available_months = sorted(all_months_data.keys(), key=lambda x: MONTHS.index(x))
+selected_month = st.selectbox(
+    "📊 Choose Month to View",
+    options=available_months,
+    index=0,
+    key="month_selector"
+)
+
+current_data = pd.DataFrame(all_months_data[selected_month])
+st.subheader(f"📊 {selected_month} 2023 Results")
 
 with col2:
     st.markdown("### ⚙️ System")
@@ -497,6 +499,7 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Abderrahim AROUHAL | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
 
