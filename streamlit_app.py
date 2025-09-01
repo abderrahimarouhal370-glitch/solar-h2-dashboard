@@ -61,25 +61,20 @@ with col_top2:
 st.markdown("---")
 
 # ====================
-# Auto-Load CSV Files from 'solar_dashboard' Folder
+# Auto-Load CSV Files from Root Folder
 # ====================
-DATA_FOLDER = "solar_dashboard"  # Your folder name
-all_months_data = {}
-
-if not os.path.exists(DATA_FOLDER):
-    st.error(f"❌ Data folder '{DATA_FOLDER}' not found. Please make sure it exists and contains CSV files.")
-    st.stop()
-
-csv_files = [f for f in os.listdir(DATA_FOLDER) if f.lower().endswith(".csv")]
+# Get all CSV files in the current directory
+csv_files = [f for f in os.listdir(".") if f.lower().endswith(".csv")]
 
 if not csv_files:
-    st.warning(f"⚠️ No CSV files found in '{DATA_FOLDER}/' folder.")
+    st.warning("⚠️ No CSV files found in the project folder. Please upload your data.")
     st.stop()
+
+all_months_data = {}
 
 for file in csv_files:
     try:
-        file_path = os.path.join(DATA_FOLDER, file)
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file)
         df.columns = df.columns.str.strip()
 
         # Detect month from filename
@@ -123,8 +118,8 @@ for file in csv_files:
 # ====================
 # Handle No Data
 # ====================
-if not all_months_data:  # ✅ Fixed: was 'if not all_months_'
-    st.info("📁 No valid data loaded. Please check your CSV files in the 'solar_dashboard' folder.")
+if not all_months_data:
+    st.info("📁 No valid data loaded. Please check your CSV files.")
     st.stop()
 
 # ====================
@@ -505,6 +500,7 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
 
