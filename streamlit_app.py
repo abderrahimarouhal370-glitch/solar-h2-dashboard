@@ -124,7 +124,7 @@ for file in csv_files:
 # ====================
 # Handle No Data
 # ====================
-if not all_months_
+if not all_months_:
     st.info("📁 No valid data loaded. Please check your CSV files in the 'data' folder.")
     st.stop()
 
@@ -506,6 +506,7 @@ st.download_button(
 # ====================
 st.markdown("---")
 st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
 
