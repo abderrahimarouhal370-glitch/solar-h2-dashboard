@@ -38,16 +38,14 @@ st.markdown("Analyze monthly performance of solar-powered hydrogen production wi
 # === Single Month Selector at Top ===
 col1, col2 = st.columns([3, 1])
 
-available_months = sorted(all_months_data.keys(), key=lambda x: MONTHS.index(x))
-selected_month = st.selectbox(
-    "📊 Choose Month to View",
-    options=available_months,
-    index=0,
-    key="month_selector"
-)
-
-current_data = pd.DataFrame(all_months_data[selected_month])
-st.subheader(f"📊 {selected_month} 2023 Results")
+with col1:
+    st.markdown("### 📅 Select Month")  # Updated heading
+    selected_month = st.selectbox(
+        "Select Month",  # ✅ Changed label to "Select Month"
+        options=MONTHS,
+        index=0,
+        label_visibility="collapsed"  # Hides the duplicate label
+    )
 
 with col2:
     st.markdown("### ⚙️ System")
@@ -122,15 +120,15 @@ if not all_months_data:
     st.stop()
 
 # ====================
-# Month Selector for Processed Data
-# ====================
+# Month Selector for Processed Data (Only one visible selector)
+# This is now redundant because we already selected above
+# So we just use `selected_month` from the top selector
+# But we still need to validate it's in available months
 available_months = sorted(all_months_data.keys(), key=lambda x: MONTHS.index(x))
-selected_month = st.selectbox(
-    "📊 Choose Month to View",
-    options=available_months,
-    index=0,
-    key="month_selector"
-)
+
+if selected_month not in available_months:
+    st.error(f"❌ No data available for {selected_month}. Please check your CSV files.")
+    st.stop()
 
 current_data = pd.DataFrame(all_months_data[selected_month])
 st.subheader(f"📊 {selected_month} 2023 Results")
@@ -498,7 +496,8 @@ st.download_button(
 # Footer
 # ====================
 st.markdown("---")
-st.markdown("🔋 *Dashboard by: Abderrahim AROUHAL | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+st.markdown("🔋 *Dashboard by: Your Name | System: Solar + Battery + H₂ | Simulation: MATLAB MPC + Simulink*")
+
 
 
 
